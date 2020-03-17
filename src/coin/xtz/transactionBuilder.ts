@@ -6,6 +6,7 @@ import { BaseKey } from '../baseCoin/iface';
 import { BaseTransactionBuilder, TransactionType } from '../baseCoin';
 import {
   genericMultisigOriginationOperation,
+  multisigDelegationOperation,
   multisigTransactionOperation,
   revealOperation,
   singlesigTransactionOperation,
@@ -56,6 +57,11 @@ export class TransactionBuilder extends BaseTransactionBuilder {
   private _walletOwnerPublicKeys: string[];
 
   // Send transaction parameters
+  private _multisigSignerKeyPairs: IndexedKeyPair[];
+  private _dataToSignOverride: DataToSignOverride[];
+  private _transfers: TransferBuilder[];
+
+  // Address Delegation transaction parameters
   private _multisigSignerKeyPairs: IndexedKeyPair[];
   private _dataToSignOverride: DataToSignOverride[];
   private _transfers: TransferBuilder[];
@@ -162,6 +168,12 @@ export class TransactionBuilder extends BaseTransactionBuilder {
             contents.push(this.buildAddressInitializationOperations());
           }
           contents = contents.concat(await this.buildSendTransactionContent());
+          break;
+        case TransactionType.Send:
+          if (this._publicKeyToReveal) {
+            contents.push(this.buildAddressInitializationOperations());
+          }
+          contents = contents.concat(await this.buildAddressDelegationTransactionContent());
           break;
         default:
           throw new BuildTransactionError('Unsupported transaction type');
@@ -401,6 +413,49 @@ export class TransactionBuilder extends BaseTransactionBuilder {
    * @returns {Promise<TransactionOp[]>} A Tezos transaction operation
    */
   private async buildSendTransactionContent(): Promise<TransactionOp[]> {
+    const contents: TransactionOp[] = [];
+    for (let i = 0; i < this._transfers.length; i++) {
+      const transfer = this._transfers[i].build();
+      let transactionOp;
+      if (isValidOriginatedAddress(transfer.from)) {
+        // Offline transactions may not have the data to sign
+        const signatures = transfer.dataToSign ? await this.getSignatures(transfer.dataToSign) : [];
+        transactionOp = multisigTransactionOperation(
+          this._counter.toString(),
+          this._sourceAddress,
+          transfer.amount,
+          transfer.from,
+          transfer.counter || '0',
+          transfer.to,
+          signatures,
+          transfer.fee.fee,
+          transfer.fee.gasLimit,
+          transfer.fee.storageLimit,
+        );
+      } else {
+        transactionOp = singlesigTransactionOperation(
+          this._counter.toString(),
+          this._sourceAddress,
+          transfer.amount,
+          transfer.to,
+          transfer.fee.fee,
+          transfer.fee.gasLimit,
+          transfer.fee.storageLimit,
+        );
+      }
+      contents.push(transactionOp);
+      this._counter = this._counter.plus(1);
+    }
+    return contents;
+  }
+  //endregion
+
+  /**
+   * Build a transaction operation for a generic multisig contract.
+   *
+   * @returns {Promise<TransactionOp[]>} A Tezos transaction operation
+   */
+  private async buildAddressDelegationTransactionContent(): Promise<TransactionOp[]> {
     const contents: TransactionOp[] = [];
     for (let i = 0; i < this._transfers.length; i++) {
       const transfer = this._transfers[i].build();
