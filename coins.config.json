@@ -1,0 +1,7 @@
+{
+  "coins": {
+    "TRX":{//Tron coin
+      "packages":"npm run gen-protobuf && npm run gen-protobufts"
+    }
+  }
+}
