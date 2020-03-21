@@ -1,5 +1,7 @@
+import * as Validator from '../../utils/validate';
+import { hashTypes } from '../../utils/hash';
 import { IndexedSignature, OriginationOp, RevealOp, TransactionOp, TransferData } from './iface';
-import { DEFAULT_FEE, DEFAULT_GAS_LIMIT, DEFAULT_STORAGE_LIMIT, hashTypes, isValidKey } from './utils';
+import { DEFAULT_FEE, DEFAULT_GAS_LIMIT, DEFAULT_STORAGE_LIMIT } from './utils';
 
 // Default n of m for multisig wallets
 const DEFAULT_N = 2;
@@ -315,7 +317,7 @@ function buildPair(data: any, type: any, contractAddress: any) {
  * @see {@link https://tezostaquito.io/docs/making_transfers#transfer-000005-50-mutez-tokens-from-a-kt1-address-to-a-tz1-address}
  */
 function transferToAccount(address: string, amount: string) {
-  if (isValidKey(address, hashTypes.KT)) {
+  if (Validator.isValidKey(address, hashTypes.KT)) {
     return transferToOriginatedAccount(address, amount);
   }
   // Lambda to transfer to an implicit account

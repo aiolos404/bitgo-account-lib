@@ -43,11 +43,6 @@ export function isPublicKey(source: KeyPairOptions): source is PublicKey {
   return (source as PublicKey).pub !== undefined;
 }
 
-export interface HashType {
-  prefix: Buffer;
-  byteLength: number;
-}
-
 export interface Operation {
   kind: string;
   counter: string;

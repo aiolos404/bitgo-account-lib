@@ -3,6 +3,7 @@ import * as tronweb from 'tronweb';
 import { protocol } from '../../../resources/trx/protobuf/tron';
 
 import { UtilsError } from '../baseCoin/errors';
+import * as Validator from '../../utils/validate';
 import { TransferContract, RawData, AccountPermissionUpdateContract, TransactionReceipt, Permission } from './iface';
 import { ContractType, PermissionType } from './enum';
 
@@ -45,11 +46,11 @@ export function verifySignature(
   sigHex: string,
   useTronHeader = true,
 ): boolean {
-  if (!isValidHex(sigHex)) {
+  if (!Validator.isValidHex(sigHex)) {
     throw new UtilsError('signature is not in a valid format, needs to be hexadecimal');
   }
 
-  if (!isValidHex(messageToVerify)) {
+  if (!Validator.isValidHex(messageToVerify)) {
     throw new UtilsError('message is not in a valid format, needs to be hexadecimal');
   }
 
@@ -185,15 +186,6 @@ export function decodeRawTransaction(
     timestamp: Number(raw.timestamp),
     contracts: raw.contract,
   };
-}
-
-/**
- * Indicates whether the passed string is a safe hex string for tron's purposes.
- *
- * @param hex A valid hex string must be a string made of numbers and characters and has an even length.
- */
-export function isValidHex(hex: string): boolean {
-  return /^(0x)?([0-9a-f]{2})+$/i.test(hex);
 }
 
 /** Deserialize the segment of the txHex which corresponds with the details of the transfer

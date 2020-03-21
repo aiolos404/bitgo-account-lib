@@ -3,6 +3,8 @@ import { HDNode, ECPair } from 'bitgo-utxo-lib';
 import blake2b from 'blake2b';
 import { DefaultKeys, ExtendedKeys } from '../baseCoin/iface';
 import * as CryptoUtils from '../../utils/crypto';
+import * as Validator from '../../utils/validate';
+import { hashTypes } from '../../utils/hash';
 import * as Utils from './utils';
 import { isPrivateKey, isPublicKey, isSeed, KeyPairOptions } from './iface';
 
@@ -53,8 +55,8 @@ export class KeyPair {
     } else if (CryptoUtils.isValidPrv(prv)) {
       // Cannot create the HD node without the chain code, so create a regular Key Chain
       this.keyPair = ECPair.fromPrivateKeyBuffer(new Buffer(prv, 'hex'));
-    } else if (Utils.isValidKey(prv, Utils.hashTypes.spsk)) {
-      this.keyPair = ECPair.fromPrivateKeyBuffer(Utils.decodeKey(prv, Utils.hashTypes.spsk));
+    } else if (Validator.isValidKey(prv, hashTypes.spsk)) {
+      this.keyPair = ECPair.fromPrivateKeyBuffer(Utils.decodeKey(prv, hashTypes.spsk));
     } else {
       throw new Error('Unsupported private key');
     }
@@ -71,8 +73,8 @@ export class KeyPair {
     } else if (CryptoUtils.isValidPub(pub)) {
       // Cannot create an HD node without the chain code, so create a regular Key Chain
       this.keyPair = ECPair.fromPublicKeyBuffer(new Buffer(pub, 'hex'));
-    } else if (Utils.isValidKey(pub, Utils.hashTypes.sppk)) {
-      this.keyPair = ECPair.fromPublicKeyBuffer(Utils.decodeKey(pub, Utils.hashTypes.sppk));
+    } else if (Validator.isValidKey(pub, hashTypes.sppk)) {
+      this.keyPair = ECPair.fromPublicKeyBuffer(Utils.decodeKey(pub, hashTypes.sppk));
     } else {
       throw new Error('Unsupported public key: ' + pub);
     }
@@ -88,12 +90,12 @@ export class KeyPair {
     const pub = this.keyPair.Q.getEncoded(true);
 
     const result: DefaultKeys = {
-      pub: Utils.base58encode(Utils.hashTypes.sppk.prefix, pub),
+      pub: Utils.base58encode(hashTypes.sppk.prefix, pub),
     };
 
     if (this.keyPair.d) {
       const prv = this.keyPair.getPrivateKeyBuffer();
-      result.prv = Utils.base58encode(Utils.hashTypes.spsk.prefix, prv);
+      result.prv = Utils.base58encode(hashTypes.spsk.prefix, prv);
     }
     return result;
   }
@@ -125,6 +127,6 @@ export class KeyPair {
     const b2b = blake2b(out.length)
       .update(pub)
       .digest(out);
-    return Utils.base58encode(Utils.hashTypes.tz2.prefix, b2b);
+    return Utils.base58encode(hashTypes.tz2.prefix, b2b);
   }
 }
