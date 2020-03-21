@@ -59,18 +59,6 @@ describe('Util library should', function() {
     should.equal(hexAddr, addressHex);
   });
 
-  it('validate a hex string', () => {
-    const hex = ['0xaffd', '0x11'];
-    hex.map(hex => {
-      should(Utils.isValidHex(hex)).ok();
-    });
-
-    const invalidHex = ['0xa11', '0xFFdYYY', '0x', ''];
-    invalidHex.map(hex => {
-      should(Utils.isValidHex(hex)).equal(false);
-    });
-  });
-
   it('sign a string', () => {
     const hexText = Buffer.from(txt).toString('hex');
     const prvArray = Utils.getByteArrayFromHexAddress(prv);
