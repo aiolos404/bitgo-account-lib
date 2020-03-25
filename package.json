@@ -9,7 +9,7 @@
     "webpack-test": "webpack --progress --colors --env.test",
     "webpack-prod": "webpack --progress --colors --env.prod",
     "build": "tsc && cp -r ./resources ./dist",
-    "build-coin": "cmd=$(cat ./coins.config.json | jq -r .coins.$COIN.packages) | $cmd && tsc && cp -r ./resources ./dist",
+    "postinstall": "cmd=$(cat ./coins.config.json | jq -r .coins.$COIN.packages) | $cmd && tsc && cp -r ./resources ./dist",
     "clean": "rm -rf dist/* && rm -rf node_modules/*",
     "compile": "npm run browserify && npm run webpack-prod",
     "compile-dev": "npm run browserify && npm run webpack-dev",
