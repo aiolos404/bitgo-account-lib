@@ -1,5 +1,6 @@
 import * as base58check from 'bs58check';
-import { HashType, hashTypes } from './hash';
+import { HashType } from '../coin/baseCoin/iface';
+import { hashTypes } from './hash';
 /**
  * Indicates whether the passed string is a safe hex string for tron's purposes.
  *

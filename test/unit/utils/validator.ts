@@ -1,6 +1,7 @@
 import should from 'should';
 import * as Validator from '../../../src/utils/validate';
-import { HashType, hashTypes } from '../../../src/utils/hash';
+import { hashTypes } from '../../../src/utils/hash';
+import { HashType } from '../../../src/coin/baseCoin/iface';
 
 describe('Shared utils validate library should', function() {
   // arbitrary text

@@ -30,3 +30,8 @@ export interface Entry extends BaseAddress {
 export interface BaseFee {
   fee: string;
 }
+
+export interface HashType {
+  prefix: Buffer;
+  byteLength: number;
+}

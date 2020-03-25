@@ -1,8 +1,3 @@
-export interface HashType {
-  prefix: Buffer;
-  byteLength: number;
-}
-
 // Base58Check is used for encoding
 // hashedTypes is used to validate hashes by type, by checking their prefix and
 // the length of the Buffer obtained by decoding the hash (excluding the prefix)

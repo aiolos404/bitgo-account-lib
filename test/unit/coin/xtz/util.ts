@@ -7,7 +7,8 @@ import {
   signedSerializedOriginationTransaction,
   validDataToSign,
 } from '../../../resources/xtz/xtz';
-import { HashType, hashTypes } from '../../../../src/utils/hash';
+import { hashTypes } from '../../../../src/utils/hash';
+import { HashType } from '../../../../src/coin/baseCoin/iface';
 
 describe('XTZ util library', function() {
   describe('transaction hash', function() {
