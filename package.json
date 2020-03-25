@@ -17,8 +17,6 @@
     "coverage": "npm run gen-coverage && npm run upload-coverage",
     "upload-coverage": "codecov -f coverage.lcov -t \"$CODECOV_TOKEN\"",
     "gen-coverage": "./node_modules/.bin/nyc report --reporter=text-lcov > coverage.lcov",
-    "gen-protobuf": "node node_modules/protobufjs/cli/bin/pbjs -t static-module -w commonjs -o ./resources/trx/protobuf/tron.js ./resources/trx/protobuf/Discover.proto ./resources/trx/protobuf/Contract.proto ./resources/trx/protobuf/tron.proto",
-    "gen-protobufts": "node node_modules/protobufjs/cli/bin/pbts -o ./resources/trx/protobuf/tron.d.ts ./resources/trx/protobuf/tron.js",
     "lint": "eslint 'src/**/*.ts' && eslint 'test/**/*.ts' && eslint 'resources/xtz/**/*.ts' || true",
     "lint-fix": "eslint 'src/**/*.ts' --fix && eslint 'test/**/*.ts' --fix  && eslint 'resources/xtz/**/*.ts' --fix || true",
     "prepublishOnly": "npm run compile",
