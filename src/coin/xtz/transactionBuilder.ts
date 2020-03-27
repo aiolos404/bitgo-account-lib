@@ -275,10 +275,11 @@ export class TransactionBuilder extends BaseTransactionBuilder {
     if (!Validator.isValidPublicKey(publicKey)) {
       throw new BuildTransactionError('Invalid public key: ' + publicKey);
     }
-    if (new KeyPair({ pub: publicKey }).getAddress() !== this._sourceAddress) {
+    const keyPair = new KeyPair({ pub: publicKey });
+    if (keyPair.getAddress() !== this._sourceAddress) {
       throw new BuildTransactionError('Public key does not match the source address: ' + this._sourceAddress);
     }
-    this._publicKeyToReveal = publicKey;
+    this._publicKeyToReveal = keyPair.getKeys().pub;
   }
 
   /**
