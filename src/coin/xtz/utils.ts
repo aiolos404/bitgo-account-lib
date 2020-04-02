@@ -3,13 +3,11 @@ import sodium from 'libsodium-wrappers';
 import { InMemorySigner } from '@taquito/signer';
 import { ec as EC } from 'elliptic';
 import { SigningError } from '../baseCoin/errors';
-import * as Validator from '../../utils/validate';
-import { hashTypes } from '../../utils/hash';
 import { HashType } from '../baseCoin/iface';
 import { genericMultisigDataToSign } from './multisigUtils';
 import { SignResponse } from './iface';
 import { KeyPair } from './keyPair';
-import * as Utils from './utils';
+
 // By default, use the transactions prefix
 export const DEFAULT_WATERMARK = new Uint8Array([3]);
 
@@ -38,7 +36,7 @@ export async function calculateTransactionId(encodedTransaction: string): Promis
   await sodium.ready;
   const encodedTransactionBuffer = Uint8Array.from(Buffer.from(encodedTransaction, 'hex'));
   const operationHashPayload = sodium.crypto_generichash(32, encodedTransactionBuffer);
-  return base58encode(hashTypes.o.prefix, Buffer.from(operationHashPayload));
+  return base58encode(this.hashTypes.o.prefix, Buffer.from(operationHashPayload));
 }
 
 /**
@@ -50,7 +48,7 @@ export async function calculateTransactionId(encodedTransaction: string): Promis
  */
 export async function calculateOriginatedAddress(transactionId: string, index: number): Promise<string> {
   // From https://github.com/TezTech/eztz/blob/cfdc4fcfc891f4f4f077c3056f414476dde3610b/src/main.js#L768
-  const ob = base58check.decode(transactionId).slice(hashTypes.o.prefix.length);
+  const ob = base58check.decode(transactionId).slice(this.hashTypes.o.prefix.length);
 
   let tt: number[] = [];
   for (let i = 0; i < ob.length; i++) {
@@ -66,7 +64,7 @@ export async function calculateOriginatedAddress(transactionId: string, index: n
 
   await sodium.ready;
   const payload = sodium.crypto_generichash(20, new Uint8Array(tt));
-  return base58encode(hashTypes.KT.prefix, Buffer.from(payload));
+  return base58encode(this.hashTypes.KT.prefix, Buffer.from(payload));
 }
 
 /**
@@ -104,7 +102,7 @@ export async function verifySignature(
   signature: string,
   watermark: Uint8Array = DEFAULT_WATERMARK,
 ): Promise<boolean> {
-  const rawPublicKey = Utils.decodeKey(publicKey, hashTypes.sppk);
+  const rawPublicKey = decodeKey(publicKey, this.hashTypes.sppk);
   const ec = new EC('secp256k1');
   const key = ec.keyFromPublic(rawPublicKey);
 
@@ -117,7 +115,7 @@ export async function verifySignature(
   await sodium.ready;
   const bytesHash = new Buffer(sodium.crypto_generichash(32, messageWithWatermark));
 
-  const rawSignature = Utils.decodeSignature(signature, hashTypes.sig);
+  const rawSignature = decodeSignature(signature, this.hashTypes.sig);
   return key.verify(bytesHash, { r: rawSignature.slice(0, 32), s: rawSignature.slice(32, 64) });
 }
 
@@ -136,13 +134,130 @@ export function generateDataToSign(
   amount: string,
   contractCounter: string,
 ): any {
-  if (!Validator.isValidOriginatedAddress(contractAddress)) {
+  if (!isValidOriginatedAddress(contractAddress)) {
     throw new Error('Invalid contract address ' + contractAddress + '. An originated account address was expected');
   }
-  if (!Validator.isValidAddress(destinationAddress)) {
+  if (!isValidAddress(destinationAddress)) {
     throw new Error('Invalid destination address ' + destinationAddress);
   }
   return genericMultisigDataToSign(contractAddress, destinationAddress, amount, contractCounter);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos hash of the given type
+ *
+ * @param {string} hash - the string to validate
+ * @param {HashType} hashType - the type of the provided hash
+ * @returns {boolean}
+ */
+export function isValidHash(hash: string, hashType: HashType): boolean {
+  // Validate encoding
+  let decodedHash;
+  try {
+    decodedHash = base58check.decode(hash);
+  } catch (e) {
+    return false;
+  }
+  const hashPrefix = decodedHash.slice(0, hashType.prefix.length);
+
+  // Check prefix
+  if (!hashPrefix.equals(Buffer.from(hashType.prefix))) {
+    return false;
+  }
+
+  // Check length
+  const hashLength = decodedHash.length - hashPrefix.length;
+  return hashLength === hashType.byteLength;
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos address
+ *
+ * @param {string} hash - the address to validate
+ * @returns {boolean}
+ */
+export function isValidAddress(hash: string): boolean {
+  return isValidImplicitAddress(hash) || isValidHash(hash, hashTypes.KT);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos implicit account address
+ *
+ * @param {string} hash - the address to validate
+ * @returns {boolean}
+ */
+export function isValidImplicitAddress(hash: string): boolean {
+  return isValidHash(hash, hashTypes.tz1) || isValidHash(hash, hashTypes.tz2) || isValidHash(hash, hashTypes.tz3);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos originated account address
+ *
+ * @param {string} hash - the address to validate
+ * @returns {boolean}
+ */
+export function isValidOriginatedAddress(hash: string): boolean {
+  return isValidHash(hash, hashTypes.KT);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos signature
+ *
+ * @param {string} hash - the signature to validate
+ * @returns {boolean}
+ */
+export function isValidSignature(hash: string): boolean {
+  return (
+    isValidHash(hash, hashTypes.edsig) ||
+    isValidHash(hash, hashTypes.spsig1) ||
+    isValidHash(hash, hashTypes.p2sig) ||
+    isValidHash(hash, hashTypes.sig)
+  );
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos public key
+ *
+ * @param {string} publicKey The public key to validate
+ * @returns {boolean}
+ */
+export function isValidPublicKey(publicKey: string): boolean {
+  return (
+    isValidHash(publicKey, hashTypes.sppk) ||
+    isValidHash(publicKey, hashTypes.p2pk) ||
+    isValidHash(publicKey, hashTypes.edpk)
+  );
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos block hash
+ *
+ * @param {string} hash - the address to validate
+ * @returns {boolean}
+ */
+export function isValidBlockHash(hash: string): boolean {
+  return isValidHash(hash, hashTypes.b);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos transaction hash
+ *
+ * @param {string} hash - the address to validate
+ * @returns {boolean}
+ */
+export function isValidTransactionHash(hash: string): boolean {
+  return isValidHash(hash, hashTypes.o);
+}
+
+/**
+ * Returns whether or not the string is a valid Tezos key given a prefix
+ *
+ * @param {string} hash - the key to validate
+ * @param {HashType} hashType - the type of the provided hash
+ * @returns {boolean}
+ */
+export function isValidKey(hash: string, hashType: HashType): boolean {
+  return isValidHash(hash, hashType);
 }
 
 /**
@@ -153,7 +268,7 @@ export function generateDataToSign(
  * @returns {Buffer} the original decoded key
  */
 export function decodeKey(hash: string, hashType: HashType): Buffer {
-  if (!Validator.isValidKey(hash, hashType)) {
+  if (!isValidKey(hash, hashType)) {
     throw new Error('Unsupported private key');
   }
   const decodedPrv = base58check.decode(hash);
@@ -168,12 +283,149 @@ export function decodeKey(hash: string, hashType: HashType): Buffer {
  * @returns {Buffer} The decoded signature without prefix
  */
 export function decodeSignature(signature: string, hashType: HashType): Buffer {
-  if (!Validator.isValidSignature(signature)) {
+  if (!isValidSignature(signature)) {
     throw new Error('Unsupported signature');
   }
   const decodedPrv = base58check.decode(signature);
   return Buffer.from(decodedPrv.slice(hashType.prefix.length, decodedPrv.length));
 }
+
+// Base58Check is used for encoding
+// hashedTypes is used to validate hashes by type, by checking their prefix and
+// the length of the Buffer obtained by decoding the hash (excluding the prefix)
+export const hashTypes = {
+  /* 20 bytes long */
+  // ed25519 public key hash
+  tz1: {
+    prefix: new Buffer([6, 161, 159]),
+    byteLength: 20,
+  },
+  // secp256k1 public key hash
+  tz2: {
+    prefix: new Buffer([6, 161, 161]),
+    byteLength: 20,
+  },
+  // p256 public key hash
+  tz3: {
+    prefix: new Buffer([6, 161, 164]),
+    byteLength: 20,
+  },
+  KT: {
+    prefix: new Buffer([2, 90, 121]),
+    byteLength: 20,
+  },
+  /* 32 bytes long */
+  // ed25519 public key
+  edpk: {
+    prefix: new Buffer([13, 15, 37, 217]),
+    byteLength: 32,
+  },
+  // ed25519 secret key
+  edsk2: {
+    prefix: new Buffer([13, 15, 58, 7]),
+    byteLength: 32,
+  },
+  // secp256k1 secret key
+  spsk: {
+    prefix: new Buffer([17, 162, 224, 201]),
+    byteLength: 32,
+  },
+  // p256 secret key
+  p2sk: {
+    prefix: new Buffer([16, 81, 238, 189]),
+    byteLength: 32,
+  },
+  // block hash
+  b: {
+    prefix: new Buffer([1, 52]),
+    byteLength: 32,
+  },
+  // operation hash
+  o: {
+    prefix: new Buffer([5, 116]),
+    byteLength: 32,
+  },
+  // operation list hash
+  Lo: {
+    prefix: new Buffer([133, 233]),
+    byteLength: 32,
+  },
+  // operation list list hash
+  LLo: {
+    prefix: new Buffer([29, 159, 109]),
+    byteLength: 32,
+  },
+  // protocol hash
+  P: {
+    prefix: new Buffer([2, 170]),
+    byteLength: 32,
+  },
+  // context hash
+  Co: {
+    prefix: new Buffer([79, 179]),
+    byteLength: 32,
+  },
+  /* 33 bytes long */
+  // secp256k1 public key
+  sppk: {
+    prefix: new Buffer([3, 254, 226, 86]),
+    byteLength: 33,
+  },
+  // p256 public key
+  p2pk: {
+    prefix: new Buffer([3, 178, 139, 127]),
+    byteLength: 33,
+  },
+  /* 56 bytes long */
+  // ed25519 encrypted seed
+  edesk: {
+    prefix: new Buffer([7, 90, 60, 179, 41]),
+    byteLength: 56,
+  },
+  /* 63 bytes long */
+  // ed25519 secret key
+  edsk: {
+    prefix: new Buffer([43, 246, 78, 7]),
+    byteLength: 64,
+  },
+  // ed25519 signature
+  edsig: {
+    prefix: new Buffer([9, 245, 205, 134, 18]),
+    byteLength: 64,
+  },
+  // secp256k1 signature
+  spsig1: {
+    prefix: new Buffer([13, 115, 101, 19, 63]),
+    byteLength: 64,
+  },
+  // p256_signature
+  p2sig: {
+    prefix: new Buffer([54, 240, 44, 52]),
+    byteLength: 64,
+  },
+  // generic signature
+  sig: {
+    prefix: new Buffer([4, 130, 43]),
+    byteLength: 64,
+  },
+  /* 15 bytes long */
+  // network hash
+  Net: {
+    prefix: new Buffer([87, 82, 0]),
+    byteLength: 15,
+  },
+  // nonce hash
+  nce: {
+    prefix: new Buffer([69, 220, 169]),
+    byteLength: 15,
+  },
+  /* 4 bytes long */
+  // chain id
+  id: {
+    prefix: new Buffer([153, 103]),
+    byteLength: 4,
+  },
+};
 
 // From https://github.com/ecadlabs/taquito/blob/master/packages/taquito/src/constants.ts
 

@@ -4,7 +4,6 @@ import { BaseCoin as CoinConfig } from '@bitgo/statics';
 import { SigningError, BuildTransactionError } from '../baseCoin/errors';
 import { BaseKey } from '../baseCoin/iface';
 import { BaseTransactionBuilder, TransactionType } from '../baseCoin';
-import * as Validator from '../../utils/validate';
 import {
   genericMultisigOriginationOperation,
   multisigTransactionOperation,
@@ -189,7 +188,7 @@ export class TransactionBuilder extends BaseTransactionBuilder {
    * @param {string} blockId A block hash to use as branch reference
    */
   branch(blockId: string): void {
-    if (!Validator.isValidBlockHash(blockId)) {
+    if (!Utils.isValidBlockHash(blockId)) {
       throw new BuildTransactionError('Invalid block hash ' + blockId);
     }
     this._blockHeader = blockId;
@@ -272,7 +271,7 @@ export class TransactionBuilder extends BaseTransactionBuilder {
     if (this._publicKeyToReveal) {
       throw new BuildTransactionError('Public key to reveal already set: ' + this._publicKeyToReveal);
     }
-    if (!Validator.isValidPublicKey(publicKey)) {
+    if (!Utils.isValidPublicKey(publicKey)) {
       throw new BuildTransactionError('Invalid public key: ' + publicKey);
     }
     const keyPair = new KeyPair({ pub: publicKey });
@@ -307,7 +306,7 @@ export class TransactionBuilder extends BaseTransactionBuilder {
     if (this._walletOwnerPublicKeys.length >= DEFAULT_M) {
       throw new BuildTransactionError('A maximum of ' + DEFAULT_M + ' owners can be set for a multisig wallet');
     }
-    if (!Validator.isValidPublicKey(publicKey)) {
+    if (!Utils.isValidPublicKey(publicKey)) {
       throw new BuildTransactionError('Invalid public key: ' + publicKey);
     }
     if (this._walletOwnerPublicKeys.includes(publicKey)) {
@@ -401,7 +400,7 @@ export class TransactionBuilder extends BaseTransactionBuilder {
     for (let i = 0; i < this._transfers.length; i++) {
       const transfer = this._transfers[i].build();
       let transactionOp;
-      if (Validator.isValidOriginatedAddress(transfer.from)) {
+      if (Utils.isValidOriginatedAddress(transfer.from)) {
         // Offline transactions may not have the data to sign
         const signatures = transfer.dataToSign ? await this.getSignatures(transfer.dataToSign) : [];
         transactionOp = multisigTransactionOperation(
@@ -445,7 +444,7 @@ export class TransactionBuilder extends BaseTransactionBuilder {
 
   /** @inheritdoc */
   validateAddress(address: Address): void {
-    if (!Validator.isValidAddress(address.address)) {
+    if (!Utils.isValidAddress(address.address)) {
       throw new BuildTransactionError('Invalid address ' + address.address);
     }
   }

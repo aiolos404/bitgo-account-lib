@@ -5,7 +5,6 @@ import { BaseTransaction } from '../baseCoin';
 import { InvalidTransactionError, ParseTransactionError } from '../baseCoin/errors';
 import { TransactionType } from '../baseCoin/';
 import { BaseKey } from '../baseCoin/iface';
-import * as Validator from '../../utils/validate';
 import { getMultisigTransferDataFromOperation, updateMultisigTransferSignatures } from './multisigUtils';
 import { KeyPair } from './keyPair';
 import { IndexedSignature, Operation, OriginationOp, ParsedTransaction, RevealOp, TransactionOp } from './iface';
@@ -42,7 +41,7 @@ export class Transaction extends BaseTransaction {
       // by local-forging. Try extracting the last 64 bytes and parse it again.
       const unsignedSerializedTransaction = serializedTransaction.slice(0, -128);
       const signature = serializedTransaction.slice(-128);
-      if (Validator.isValidSignature(signature)) {
+      if (Utils.isValidSignature(signature)) {
         throw new ParseTransactionError('Invalid transaction');
       }
       // TODO: encode the signature and save it in _signature

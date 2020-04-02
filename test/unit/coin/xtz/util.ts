@@ -7,11 +7,90 @@ import {
   signedSerializedOriginationTransaction,
   validDataToSign,
 } from '../../../resources/xtz/xtz';
-import { hashTypes } from '../../../../src/utils/hash';
+import { hashTypes } from '../../../../src/coin/xtz/utils';
 import { HashType } from '../../../../src/coin/baseCoin/iface';
 
 describe('XTZ util library', function() {
+  describe('address', function() {
+    it('should validate addresses', function() {
+      const validAddresses = [
+        'tz1aWXP237BLwNHJcCD4b3DutCevhqq2T1Z9',
+        'tz2SHdGxFGhs68wYNC4hEqxbWARxp2J4mVxv',
+        'tz3gN8NTLNLJg5KRsUU47NHNVHbdhcFXjjaB',
+        'KT1EGbAxguaWQFkV3Egb2Z1r933MWuEYyrJS',
+      ];
+
+      for (const address of validAddresses) {
+        Utils.isValidAddress(address).should.be.true();
+      }
+    });
+
+    it('should fail to validate invalid addresses', function() {
+      const invalidAddresses = [
+        'tz4aWXP237BLwNHJcCD4b3DutCevhqq2T1Z9',
+        'xtz2SHdGxFGhs68wYNC4hEqxbWARxp2J4mVxv',
+        'KT2EGbAxguaWQFkV3Egb2Z1r933MWuEYyrJS',
+        'abc',
+      ];
+
+      for (const address of invalidAddresses) {
+        should.doesNotThrow(() => Utils.isValidAddress(address));
+        Utils.isValidAddress(address).should.be.false();
+      }
+    });
+  });
+
+  describe('block hash', function() {
+    it('should validate block hashes', function() {
+      const validHashes = [
+        'BKoifs5gGffAzuRBcg3ygxbLdrCXyDDS1ALvMG8SFYWahzoYMku',
+        'BL4oxWAkozJ3mJHwVFQqga5dQMBi8kBCPAQyBKgF78z7SQT1AvN',
+        'BL29n92KHaarq1r7XjwTFotzCpxq7LtXMc9bF2qD9Qt26ZTYQia',
+      ];
+
+      for (const hash of validHashes) {
+        Utils.isValidBlockHash(hash).should.be.true();
+      }
+    });
+
+    it('should fail to validate invalid block hashes', function() {
+      const invalidHashes = [
+        'AKoifs5gGffAzuRBcg3ygxbLdrCXyDDS1ALvMG8SFYWahzoYMku',
+        'BKoifs5gGffAzuRBcg3ygxbLdrCXyDDS1ALvMG8SFYWahzoYMku1111111111',
+        'invalid',
+      ];
+
+      for (const hash of invalidHashes) {
+        Utils.isValidBlockHash(hash).should.be.false();
+      }
+    });
+  });
+
   describe('transaction hash', function() {
+    it('should validate tx hashes', function() {
+      const validHashes = [
+        'opUmZNMueryYFxTbzzocS7K4dzs3NmgKqhhr9TkcftszDDnoRVu',
+        'ookyzxsYF7vyTeDzsgs58XJ4PXuvBkK8wWqZJ4EoRS6RWQb4Y9P',
+        'ooXQoUX32szALRvgzD2TDzeRPXtPfmfqwoehPaK5khbrBiMAtSw',
+      ];
+
+      for (const hash of validHashes) {
+        Utils.isValidTransactionHash(hash).should.be.true();
+      }
+    });
+
+    it('should fail to validate invalid tx hashes', function() {
+      const invalidHashes = [
+        'lpUmZNMueryYFxTbzzocS7K4dzs3NmgKqhhr9TkcftszDDnoRVu',
+        'opUmZNMueryYFxTbzzocS7K4dzs3NmgKqhhr9TkcftszDDnoRVu1111111111',
+        'invalid',
+      ];
+
+      for (const hash of invalidHashes) {
+        Utils.isValidTransactionHash(hash).should.be.false();
+      }
+    });
+
     it('should calculate the transaction hash', async function() {
       const operationId = await Utils.calculateTransactionId(signedSerializedOriginationTransaction);
       operationId.should.equal('opPsNbm7EcqPyryBDDR28BjdthnriktK8TbMvpwc9r4NwmvToYP');
@@ -151,6 +230,34 @@ describe('XTZ util library', function() {
         () => Utils.generateDataToSign('KT1NH2M23xovhw7uwWVuoGTYxykeCcVfSqhL', 'abc', '0', '0'),
         new RegExp('Invalid destination address'),
       );
+    });
+  });
+
+  describe('signature', function() {
+    it('should validate signature', function() {
+      const validSignatures = [
+        'sigVgnaU2S1L4jhtPaTX2SAxsGpP1dRS89VTSR9FrFuxxPvgA2G67QRuez6o6xP7ekagdZX4ELvh7pbMMdLoBSzvk2AVyQpk',
+        'spsig1DWTuXdgUg2t64PLRfaapsYejCoCVVkqy2Zjv41Zirt7MjoqSfBnP38qoAg3SWicfQNiG25yMqGYge4jrfrwv9H8hRKDyY',
+        'sigS9pqYUXiUJcz2Wsx5x98ud9KtgGVg4gCwpBoDBgHrZy9gwJedKMCrcQPxm9C7i1gesETbhFD6Gm8BpadGgd2cgiGoQbiY',
+        'spsig19yWAc5nBpGmNCWdvEWHnpJXEiTqZjhNgWwWa1Lz6kVgakb7qCPj9z6G6LLEFWmsmNcPCZYseERVDUXh99N7wqDppcDKQM',
+      ];
+
+      for (const hash of validSignatures) {
+        Utils.isValidSignature(hash).should.be.true();
+      }
+    });
+
+    it('should fail to validate invalid signature', function() {
+      const invalidHashes = [
+        'sigS9pqYUXiUJcz2Wsx5x98ud9KtgGVg4gCwpBoDBgHrZ',
+        'sig',
+        'BKoifs5gGffAzuRBcg3ygxbLdrCXyDDS1ALvMG8SFYWahzoYMku1111111111',
+        'invalid',
+      ];
+
+      for (const hash of invalidHashes) {
+        Utils.isValidSignature(hash).should.be.false();
+      }
     });
   });
 
